@@ -1,6 +1,6 @@
 Name:           sisu
 Version:        2.1.1
-Release:        2
+Release:        4
 Summary:        Sonatype dependency injection framework
 
 
