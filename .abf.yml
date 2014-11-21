@@ -1,3 +1,6 @@
-sources:
+removed_sources:
   org.eclipse.sisu.inject-0.1.0.tar.bz2: 35d5767c5aaa7623e23bb7ec774f6eeafd60f004
   org.eclipse.sisu.plexus-0.1.0.tar.bz2: 92ad66f792a85d39745f609d26c75203d31d024e
+sources:
+  org.eclipse.sisu.inject-0.2.1.tar.bz2: cba0b489064b148ffe32489b60a4f25cb0ac6ec0
+  org.eclipse.sisu.plexus-0.2.1.tar.bz2: 7b0cbfd8ab82cb0c87c97476fdb36b47350dd206

@@ -1,8 +1,8 @@
 %{?_javapackages_macros:%_javapackages_macros}
 Name:           sisu
 Epoch:          1
-Version:        0.1.0
-Release:        1.0%{?dist}
+Version:        0.2.1
+Release:        10%{?dist}
 Summary:        Eclipse dependency injection framework
 # bundled asm is under BSD
 # See also: https://fedorahosted.org/fpc/ticket/346
@@ -11,31 +11,38 @@ URL:            http://eclipse.org/sisu
 
 # TODO: unbundle asm
 
-Source0:        http://git.eclipse.org/c/%{name}/org.eclipse.%{name}.inject.git/snapshot/releases/%{version}.tar.bz2/org.eclipse.%{name}.inject-%{version}.tar.bz2
-Source1:        http://git.eclipse.org/c/%{name}/org.eclipse.%{name}.plexus.git/snapshot/releases/%{version}.tar.bz2/org.eclipse.%{name}.plexus-%{version}.tar.bz2
-Patch0:         0001-Fix-OSGi-compatibility.patch
-# Incompatible version of Plexus Classworlds (upstreamable)
-Patch1:         0002-Fix-compatibility-with-Plexus-Classworlds-2.5.patch
+Source0:        http://git.eclipse.org/c/%{name}/org.eclipse.%{name}.inject.git/snapshot/releases/org.eclipse.%{name}.inject-%{version}.tar.bz2
+Source1:        http://git.eclipse.org/c/%{name}/org.eclipse.%{name}.plexus.git/snapshot/releases/org.eclipse.%{name}.plexus-%{version}.tar.bz2
+
+Patch0:         %{name}-OSGi-import-guava.patch
+Patch1:         %{name}-java8.patch
+Patch2:         %{name}-ignored-tests.patch
+Patch3:         %{name}-plexus-utils-3.0.18.patch
 
 BuildArch:      noarch
 
 BuildRequires:  maven-local
-BuildRequires:  mvn(com.google.guava:guava)
+BuildRequires:  mvn(ch.qos.logback:logback-classic)
+BuildRequires:  mvn(com.google.inject.extensions:guice-assistedinject)
 BuildRequires:  mvn(com.google.inject:guice)
+BuildRequires:  mvn(javax.annotation:javax.annotation-api)
 BuildRequires:  mvn(javax.enterprise:cdi-api)
 BuildRequires:  mvn(junit:junit)
+BuildRequires:  mvn(net.sf.cglib:cglib)
+BuildRequires:  mvn(org.apache.felix:org.apache.felix.framework)
+BuildRequires:  mvn(org.apache.maven.plugins:maven-clean-plugin)
+BuildRequires:  mvn(org.apache.maven.plugins:maven-dependency-plugin)
+BuildRequires:  mvn(org.apache.maven.plugins:maven-deploy-plugin)
 BuildRequires:  mvn(org.codehaus.mojo:build-helper-maven-plugin)
 BuildRequires:  mvn(org.codehaus.plexus:plexus-classworlds)
 BuildRequires:  mvn(org.codehaus.plexus:plexus-component-annotations)
 BuildRequires:  mvn(org.codehaus.plexus:plexus-utils)
-BuildRequires:  mvn(org.eclipse.sisu:org.eclipse.sisu.inject)
-BuildRequires:  mvn(org.eclipse.sisu:sisu-inject)
-BuildRequires:  mvn(org.eclipse.sisu:sisu-plexus)
-BuildRequires:  mvn(org.eclipse.tycho:target-platform-configuration)
 BuildRequires:  mvn(org.eclipse.tycho:tycho-maven-plugin)
 BuildRequires:  mvn(org.eclipse.tycho:tycho-source-plugin)
+BuildRequires:  mvn(org.jacoco:jacoco-maven-plugin)
+BuildRequires:  mvn(org.osgi:org.osgi.core)
 BuildRequires:  mvn(org.slf4j:slf4j-api)
-BuildRequires:  mvn(org.sonatype.oss:oss-parent)
+BuildRequires:  mvn(org.sonatype.oss:oss-parent:pom:)
 BuildRequires:  mvn(org.sonatype.sisu:sisu-guice::no_aop:)
 
 BuildRequires:  osgi(aopalliance)
@@ -52,11 +59,13 @@ BuildRequires:  osgi(org.codehaus.plexus.component-annotations)
 BuildRequires:  osgi(org.codehaus.plexus.utils)
 BuildRequires:  osgi(org.eclipse.jdt.apt.core)
 BuildRequires:  osgi(org.eclipse.osgi)
+BuildRequires:  osgi(org.eclipse.osgi.source)
 BuildRequires:  osgi(org.hamcrest.core)
 BuildRequires:  osgi(org.junit)
 BuildRequires:  osgi(org.sonatype.sisu.guice)
+BuildRequires:  osgi(org.sonatype.sisu.inject.guice-servlet)
+BuildRequires:  osgi(org.testng)
 BuildRequires:  osgi(slf4j.api)
-BuildRequires:  osgi(org.eclipse.osgi.source)
 
 
 %description
@@ -65,8 +74,6 @@ style dependency injection.
 
 %package        inject
 Summary:        Sisu inject POM
-Requires:       mvn(javax.enterprise:cdi-api)
-Requires:       mvn(com.google.inject:guice)
 
 Obsoletes:      %{name}                   < %{epoch}:%{version}-%{release}
 Obsoletes:      %{name}-bean              < %{epoch}:%{version}-%{release}
@@ -97,13 +104,6 @@ This package contains %{summary}.
 
 %package        plexus
 Summary:        Sisu Plexus POM
-Requires:       mvn(javax.enterprise:cdi-api)
-Requires:       mvn(com.google.guava:guava)
-Requires:       mvn(org.sonatype.sisu:sisu-guice::no_aop:)
-Requires:       mvn(org.eclipse.sisu:org.eclipse.sisu.inject)
-Requires:       mvn(org.codehaus.plexus:plexus-component-annotations)
-Requires:       mvn(org.codehaus.plexus:plexus-classworlds)
-Requires:       mvn(org.codehaus.plexus:plexus-utils)
 
 %description    plexus
 This package contains %{summary}.
@@ -119,38 +119,46 @@ This package contains %{summary}.
 tar xf %{SOURCE0} && mv releases/* sisu-inject && rmdir releases
 tar xf %{SOURCE1} && mv releases/* sisu-plexus && rmdir releases
 
-#patch0 -p1
-%patch1 -p1
+%patch0
+%patch1
+%patch2
+%patch3
 
 %mvn_file ":{*}" @1
-%mvn_package ":*{inject,plexus}" @1
+# Install JARs and POMs only
+%mvn_package ":*{inject,plexus}:{jar,pom}:{}:" @1
 %mvn_package : __noinstall
 
+%pom_disable_module org.eclipse.sisu.inject.site sisu-inject
 %pom_disable_module org.eclipse.sisu.inject.tests sisu-inject
+%pom_disable_module org.eclipse.sisu.plexus.site sisu-plexus
 %pom_disable_module org.eclipse.sisu.plexus.tests sisu-plexus
 
-for target in \
-    sisu-inject/org.eclipse.sisu.inject/build.target \
-    sisu-plexus/org.eclipse.sisu.plexus/build.target
+%pom_add_dep net.sf.cglib:cglib::test sisu-inject/org.eclipse.sisu.inject.tests
+%pom_add_dep net.sf.cglib:cglib::test sisu-plexus/org.eclipse.sisu.plexus.tests
+
+for pom in \
+    sisu-inject \
+    sisu-inject/org.eclipse.sisu.inject \
+    sisu-inject/org.eclipse.sisu.inject.extender \
+    sisu-plexus \
+    sisu-plexus/org.eclipse.sisu.plexus \
+    sisu-plexus/org.eclipse.sisu.plexus.extender
 do
-    sed -i '/<unit/s|version="[^"]*"||' $target
-    sed -i '/<repository/s|location="[^"]*"|location="file:'"$PWD"'/.m2/p2/repo"|' $target
-    sed -i '/<unit id="plexus-deps"/s|.*|<unit id="org.codehaus.plexus.classworlds"/><unit id="org.codehaus.plexus.component-annotations"/><unit id="org.codehaus.plexus.utils"/>|' $target
-    sed -i '/<unit id="org.aopalliance"/s|.*|<unit id="aopalliance"/>|' $target
-    sed -i '/<unit id="cdi.api"/s|.*|<unit id="javax.enterprise.cdi-api"/>|' $target
-    sed -i '/<unit id="javax.annotation"/s|.*|<unit id="org.apache.geronimo.specs.geronimo-annotation_1.1_spec"/>|' $target
-    sed -i '/<unit id="javax.ejb"/s|.*|<unit id="org.apache.geronimo.specs.geronimo-ejb_3.1_spec"/>|' $target
-    sed -i '/<unit id="com.google.inject"/s|.*|<unit id="org.sonatype.sisu.guice"/>|' $target
-    sed -i '/<unit id="org.slf4j.api"/s|.*|<unit id="slf4j.api"/>|' $target
-    sed -i '/<unit id="com.google.inject.source"/d' $target
+    %pom_remove_plugin :target-platform-configuration $pom
 done
 
 for pom in \
     sisu-inject/org.eclipse.sisu.inject \
     sisu-inject/org.eclipse.sisu.inject.extender \
-    sisu-plexus/org.eclipse.sisu.plexus
+    sisu-plexus/org.eclipse.sisu.plexus \
+    sisu-plexus/org.eclipse.sisu.plexus.extender
 do
     %pom_remove_plugin :animal-sniffer-maven-plugin $pom
+done
+
+for pom in sisu-inject/org.eclipse.sisu.inject.tests/pom.xml sisu-plexus/org.eclipse.sisu.plexus/pom.xml; do
+    %pom_xpath_inject "pom:dependency[pom:artifactId='cdi-api']" '<scope>provided</scope>' $pom
 done
 
 # missing dep org.eclipse.tycho.extras:tycho-sourceref-jgit
@@ -175,15 +183,13 @@ cat <<EOF >pom.xml
 EOF
 
 %build
-# Tycho inject dependencies with system scope.  Disable installation
-# of effective POMs until Mvn can handle system-scoped deps.
-%mvn_build -f -i
-for mod in inject plexus; do
-    %mvn_artifact sisu-${mod}/pom.xml
-    %mvn_artifact sisu-${mod}/org.eclipse.sisu.${mod}/pom.xml sisu-${mod}/org.eclipse.sisu.${mod}/target/org.eclipse.sisu.${mod}-%{version}.jar
-done
+%mvn_build -i
 
 %install
+%mvn_artifact sisu-inject/pom.xml
+%mvn_artifact sisu-inject/org.eclipse.sisu.inject/pom.xml sisu-inject/org.eclipse.sisu.inject/target/org.eclipse.sisu.inject-%{version}.jar
+%mvn_artifact sisu-plexus/pom.xml
+%mvn_artifact sisu-plexus/org.eclipse.sisu.plexus/pom.xml sisu-plexus/org.eclipse.sisu.plexus/target/org.eclipse.sisu.plexus-%{version}.jar
 %mvn_install
 
 
@@ -198,6 +204,60 @@ done
 
 
 %changelog
+* Tue Sep 30 2014 Mikolaj Izdebski <mizdebsk@redhat.com> - 1:0.2.1-10
+- Port to plexus-utils 3.0.18
+
+* Thu Sep 18 2014 Michal Srb <msrb@redhat.com> - 1:0.2.1-9
+- Rebuild to fix metadata
+- Remove explicit Requires
+
+* Fri Sep 12 2014 Mikolaj Izdebski <mizdebsk@redhat.com> - 1:0.2.1-8
+- Update to latest XMvn version
+- Enable tests
+
+* Mon Aug  4 2014 Mikolaj Izdebski <mizdebsk@redhat.com> - 1:0.2.1-7
+- Fix build-requires on sonatype-oss-parent
+
+* Sun Jun 08 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1:0.2.1-6
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
+
+* Fri May 30 2014 Mikolaj Izdebski <mizdebsk@redhat.com> - 1:0.2.1-5
+- Install JARs and POMs only
+
+* Thu May 29 2014 Mikolaj Izdebski <mizdebsk@redhat.com> - 1:0.2.1-4
+- Build with XMvn 2.0.0
+
+* Wed May 07 2014 Michael Simacek <msimacek@redhat.com> - 1:0.2.1-3
+- Build with Java 8
+
+* Wed Apr 23 2014 Mikolaj Izdebski <mizdebsk@redhat.com> - 1:0.2.1-2
+- Import guava in OSGi manifest
+
+* Tue Apr 22 2014 Mikolaj Izdebski <mizdebsk@redhat.com> - 1:0.2.1-1
+- Update to upstream version 0.2.1
+- Remove patch for Eclipse bug 429369
+
+* Wed Apr 16 2014 Mikolaj Izdebski <mizdebsk@redhat.com> - 1:0.2.0-5
+- Update upstream patch for bug 429369
+- Force usage of Java 1.7
+
+* Mon Mar  3 2014 Mikolaj Izdebski <mizdebsk@redhat.com> - 1:0.2.0-4
+- Revert upstream feature which introduced a regression
+- Resolves: rhbz#1070915
+
+* Thu Feb 20 2014 Michal Srb <msrb@redhat.com> - 1:0.2.0-3
+- Remove R on cdi-api
+
+* Thu Feb 20 2014 Michal Srb <msrb@redhat.com> - 1:0.2.0-2
+- Update BR/R for version 0.2.0
+- Enable tests
+
+* Mon Feb 17 2014 Mikolaj Izdebski <mizdebsk@redhat.com> - 1:0.2.0-1
+- Update to upstream version 0.2.0
+
+* Wed Dec  4 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 1:0.1.1-1
+- Update to upstream version 0.1.1
+
 * Wed Nov 13 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 1:0.1.0-1
 - Update to upstream version 0.1.0
 
@@ -299,3 +359,4 @@ done
 
 * Thu Oct 14 2010 Stanislav Ochotnicky <sochotnicky@redhat.com> - 1.4.2-1
 - Initial version of the package
+
