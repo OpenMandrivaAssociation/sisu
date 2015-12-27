@@ -19,6 +19,7 @@ Patch3:         %{name}-plexus-utils-3.0.18.patch
 BuildArch:      noarch
 
 BuildRequires:  maven-local
+BuildRequires:	mvn(org.ow2.asm:asm)
 BuildRequires:  mvn(ch.qos.logback:logback-classic)
 BuildRequires:  mvn(com.google.inject.extensions:guice-assistedinject)
 BuildRequires:  mvn(com.google.inject:guice)
