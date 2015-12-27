@@ -2,14 +2,11 @@
 Name:           sisu
 Epoch:          1
 Version:        0.2.1
-Release:        10.1%{?dist}
+Release:        10.2
 Summary:        Eclipse dependency injection framework
-# bundled asm is under BSD
-# See also: https://fedorahosted.org/fpc/ticket/346
-License:        EPL and BSD
+Group:		Development/Java
+License:        EPL
 URL:            http://eclipse.org/sisu
-
-# TODO: unbundle asm
 
 Source0:        http://git.eclipse.org/c/%{name}/org.eclipse.%{name}.inject.git/snapshot/releases/org.eclipse.%{name}.inject-%{version}.tar.bz2
 Source1:        http://git.eclipse.org/c/%{name}/org.eclipse.%{name}.plexus.git/snapshot/releases/org.eclipse.%{name}.plexus-%{version}.tar.bz2
@@ -123,6 +120,13 @@ tar xf %{SOURCE1} && mv releases/* sisu-plexus && rmdir releases
 %patch1
 %patch2
 %patch3
+
+# Unbundle ASM
+rm -rf sisu-inject/org.eclipse.sisu.inject/src/org/eclipse/sisu/space/asm/
+sed -i 's/org.eclipse.sisu.space.asm/org.objectweb.asm/' $(find -name *.java)
+sed -i 's/Import-Package: /&org.objectweb.asm;version="5",/' sisu-inject/org.eclipse.sisu.inject/META-INF/MANIFEST.MF
+%pom_add_dep org.ow2.asm:asm sisu-inject/org.eclipse.sisu.inject
+%pom_add_dep org.ow2.asm:asm sisu-plexus/org.eclipse.sisu.plexus.tests
 
 %mvn_file ":{*}" @1
 # Install JARs and POMs only
