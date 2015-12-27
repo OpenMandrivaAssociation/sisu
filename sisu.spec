@@ -181,7 +181,7 @@ cat <<EOF >pom.xml
 EOF
 
 %build
-%mvn_build -i
+%mvn_build -i -- -X
 
 %install
 %mvn_artifact sisu-inject/pom.xml
