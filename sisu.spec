@@ -1,8 +1,8 @@
 %{?_javapackages_macros:%_javapackages_macros}
 Name:           sisu
 Epoch:          1
-Version:        0.2.1
-Release:        10.2
+Version:        0.3.2
+Release:        1.2
 Summary:        Eclipse dependency injection framework
 Group:		Development/Java
 License:        EPL
@@ -12,7 +12,6 @@ Source0:        http://git.eclipse.org/c/%{name}/org.eclipse.%{name}.inject.git/
 Source1:        http://git.eclipse.org/c/%{name}/org.eclipse.%{name}.plexus.git/snapshot/releases/org.eclipse.%{name}.plexus-%{version}.tar.bz2
 
 Patch0:         %{name}-OSGi-import-guava.patch
-Patch1:         %{name}-java8.patch
 Patch2:         %{name}-ignored-tests.patch
 Patch3:         %{name}-plexus-utils-3.0.18.patch
 
@@ -41,9 +40,10 @@ BuildRequires:  mvn(org.jacoco:jacoco-maven-plugin)
 BuildRequires:  mvn(org.osgi:org.osgi.core)
 BuildRequires:  mvn(org.slf4j:slf4j-api)
 BuildRequires:  mvn(org.sonatype.oss:oss-parent:pom:)
-BuildRequires:  mvn(org.sonatype.sisu:sisu-guice::no_aop:)
 
 BuildRequires:  osgi(aopalliance)
+BuildRequires:  osgi(com.google.inject)
+BuildRequires:  osgi(com.google.inject.servlet)
 BuildRequires:  osgi(com.google.guava)
 BuildRequires:  osgi(javax.el)
 BuildRequires:  osgi(javax.enterprise.cdi-api)
@@ -60,8 +60,6 @@ BuildRequires:  osgi(org.eclipse.osgi)
 BuildRequires:  osgi(org.eclipse.osgi.source)
 BuildRequires:  osgi(org.hamcrest.core)
 BuildRequires:  osgi(org.junit)
-BuildRequires:  osgi(org.sonatype.sisu.guice)
-BuildRequires:  osgi(org.sonatype.sisu.inject.guice-servlet)
 BuildRequires:  osgi(org.testng)
 BuildRequires:  osgi(slf4j.api)
 
@@ -118,7 +116,6 @@ tar xf %{SOURCE0} && mv releases/* sisu-inject && rmdir releases
 tar xf %{SOURCE1} && mv releases/* sisu-plexus && rmdir releases
 
 %patch0
-%patch1
 %patch2
 %patch3
 
@@ -186,7 +183,7 @@ cat <<EOF >pom.xml
 EOF
 
 %build
-%mvn_build -i -- -X
+%mvn_build -i
 
 %install
 %mvn_artifact sisu-inject/pom.xml
