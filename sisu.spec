@@ -2,7 +2,7 @@
 Name:           sisu
 Epoch:          1
 Version:        0.3.2
-Release:        1.2
+Release:        1.3
 Summary:        Eclipse dependency injection framework
 Group:		Development/Java
 License:        EPL
