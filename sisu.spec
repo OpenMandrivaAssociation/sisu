@@ -6,7 +6,7 @@ Release:        1.3
 Summary:        Eclipse dependency injection framework
 Group:		Development/Java
 License:        EPL
-URL:            http://eclipse.org/sisu
+URL:            https://eclipse.org/sisu
 
 Source0:        http://git.eclipse.org/c/%{name}/org.eclipse.%{name}.inject.git/snapshot/releases/org.eclipse.%{name}.inject-%{version}.tar.bz2
 Source1:        http://git.eclipse.org/c/%{name}/org.eclipse.%{name}.plexus.git/snapshot/releases/org.eclipse.%{name}.plexus-%{version}.tar.bz2
