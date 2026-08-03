@@ -1,6 +1,6 @@
 Name:           sisu
 Epoch:          1
-Version:        0.9.0~M3
+Version:        7.3.0
 Release:        1
 Summary:        Eclipse dependency injection framework
 # sisu is EPL-1.0, the bundled asm is BSD
@@ -32,7 +32,7 @@ The Sisu Plugin for Maven provides mojos to generate
 META-INF/sisu/javax.inject.Named index files for the Sisu container.
 
 %prep
-%autosetup -p1 -C
+%autosetup -p1 -C -n sisu-project-milestones-0.9.0.M3
 
 %pom_disable_module org.eclipse.sisu.inject.extender
 %pom_disable_module org.eclipse.sisu.plexus.extender
